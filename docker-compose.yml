@@ -23,12 +23,12 @@ services:
       - /etc/localtime:/etc/localtime:ro
     
     # network[possible values: gnosis, goerli, mainnet, prater, sepolia]
+    #  --disable-upnp in production, should add this flag to enable manual forwarding
+
     command: |
       lighthouse
       beacon_node
- 
       --network=mainnet 
-      --disable-upnp
       --datadir=/data
       --port=9000
       --http
