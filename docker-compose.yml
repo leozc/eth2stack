@@ -24,7 +24,7 @@ services:
     
     # network[possible values: gnosis, goerli, mainnet, prater, sepolia]
     #  --disable-upnp in production, should add this flag to enable manual forwarding
-
+    # check point
     command: |
       lighthouse
       beacon_node
@@ -44,7 +44,7 @@ services:
       --metrics
       --metrics-port=5054
       --metrics-address=0.0.0.0
-#      --checkpoint-sync-url=https://checkpoint.gnosischain.com/
+      --checkpoint-sync-url=https://mainnet.checkpoint.sigp.io
     logging:
       driver: json-file
       options:

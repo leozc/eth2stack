@@ -12,3 +12,15 @@ To run
 ```bash
 docker compose up
 ```
+
+To see logs
+```bash
+docker compose execution -f #Execution layer
+docker compose consensus -f #Consensus layer
+```
+
+To interact with Geth
+```bash
+sudo geth attach ipc:$HOME/.eth2docker/geth/data/geth.ipc
+```
+
