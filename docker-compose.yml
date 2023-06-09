@@ -1,0 +1,105 @@
+version: "3.8"
+
+services:
+  consensus:
+    container_name: consensus
+    image: sigp/lighthouse:latest-modern
+    restart: always
+    networks:
+      - eth2_net
+    ports:
+      - 9000:9000/tcp # p2p
+      - 9000:9000/udp # p2p
+      - 5054:5054/tcp # metrics
+    expose:
+      - 4000 # http
+    depends_on: 
+      - execution
+    volumes:
+      - /home/$USER/.eth2docker/consensus/data:/data
+      # openssl rand -hex 32 | tr -d "\n" | tee >/home/$USER/.eth2docker/jwtsecret/jwt.hex
+      - /home/$USER/.eth2docker/jwtsecret/jwt.hex:/jwt.hex
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    
+    # network[possible values: gnosis, goerli, mainnet, prater, sepolia]
+    command: |
+      lighthouse
+      beacon_node
+ 
+      --network=mainnet 
+      --disable-upnp
+      --datadir=/data
+      --port=9000
+      --http
+      --http-address=0.0.0.0
+      --http-port=4000
+      --target-peers=50
+      --execution-endpoint=http://execution:8551
+      --execution-jwt=/jwt.hex
+      --debug-level=info
+      --validator-monitor-auto
+      --subscribe-all-subnets
+      --import-all-attestations
+      --metrics
+      --metrics-port=5054
+      --metrics-address=0.0.0.0
+#      --checkpoint-sync-url=https://checkpoint.gnosischain.com/
+    logging:
+      driver: json-file
+      options:
+        max-size: 2m
+        max-file: 10
+
+  execution:
+    image: ethereum/client-go
+    pull_policy: always
+    container_name: execution
+    restart: unless-stopped     
+    networks:
+      - eth2_net
+    ports:
+      - 30303:30303
+      - 30303:30303/udp
+      - 8545:8545
+      - 8546:8546
+      - 8551:8551
+    volumes:
+      - /home/$USER/.eth2docker/geth/data:/root/.ethereum
+      - /home/$USER/.eth2docker/jwtsecret/jwt.hex:/jwt.hex
+    stop_signal: SIGINT
+    stop_grace_period: 2m
+    healthcheck:
+      test: ["CMD-SHELL", "geth attach --exec eth.blockNumber"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command:
+      - --syncmode=snap # fast, full, snap
+      - --http
+      - --http.api=eth,net,web3,engine,admin
+      - --http.addr=0.0.0.0
+      - --http.vhosts=*
+      - --http.corsdomain=*
+      - --ws
+      - --ws.origins=*
+      - --ws.addr=0.0.0.0
+      - --ws.api=eth,net,web3
+      - --graphql
+      - --graphql.corsdomain=*
+      - --graphql.vhosts=*
+      - --authrpc.addr=0.0.0.0
+      - --authrpc.vhosts=*
+      - --authrpc.port=8551
+      - --authrpc.jwtsecret=/jwt.hex
+      - --txlookuplimit=0
+      - --networkid=1
+    logging:
+      driver: json-file
+      options:
+        max-size: 2m
+        max-file: 10
+
+networks:
+  eth2_net:
+    name: eth2_net
